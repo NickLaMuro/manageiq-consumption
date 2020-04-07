@@ -5,7 +5,6 @@ module ManageIQ::Showback
     let(:time_current) { Time.parse('Tue, 05 Feb 2019 18:53:19 UTC +00:00').utc }
 
     before do
-      skip # TODO: fix these specs
       Timecop.travel(time_current)
     end
 
@@ -23,6 +22,14 @@ module ManageIQ::Showback
 
       it 'has a valid factory' do
         expect(rate).to be_valid
+      end
+
+      it "serializes JSONB fields" do
+        rate.screener = {'tag' => { 'environment' => ['test'] }}
+        rate.save!
+        reloaded_rate = described_class.where(:id => rate.id).first
+
+        expect(rate.screener).to eq({'tag' => { 'environment' => ['test'] }})
       end
 
       it 'has a tier after create' do

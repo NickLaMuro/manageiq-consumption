@@ -14,6 +14,26 @@ RSpec.describe ManageIQ::Showback::DataView, :type => :model do
       expect(data_view).to be_valid
     end
 
+    it 'serializes JSONB fields' do
+      time_1        = 3.hours.ago
+      time_2        = Time.now.utc
+      box_info      = {"CPU" => {"average" => [2, "percent"], "max_number_of_cpu" => [40, "cores"]}}
+      data_snapshot = { time_1 => box_info, time_2 => box_info}
+      data_rollup   = FactoryBot.build(:data_rollup, :with_vm_data, :full_month, :context => {"foo" => "bar"})
+
+      data_view.cost          = cost
+      data_view.data_snapshot = data_snapshot
+      data_view.data_rollup   = data_rollup
+
+      data_view.save!
+      reloaded_data_view = described_class.where(:id => data_view.id).first
+
+      expect(reloaded_data_view.cost).to eq(cost)
+      expect(reloaded_data_view.data_snapshot[time_1.to_s]).to eq(box_info)
+      expect(reloaded_data_view.data_snapshot[time_2.to_s]).to eq(box_info)
+      expect(reloaded_data_view.context_snapshot).to eq({"foo" => "bar"})
+    end
+
     it 'monetizes cost' do
       expect(described_class).to monetize(:cost)
       expect(data_view).to monetize(:cost)

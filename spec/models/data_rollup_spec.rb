@@ -8,6 +8,29 @@ describe ManageIQ::Showback::DataRollup do
       expect(data_rollup).to be_valid
     end
 
+    it "serializes JSONB fields" do
+      rollup_data = {
+        "CPU"    => {
+          "average"           => [29.8571428571429, "percent"],
+          "number"            => [2.0, "cores"],
+          "max_number_of_cpu" => [2, "cores"]
+        },
+        "MEM"    => {
+          "max_mem" => [2048, "Mib"]
+        },
+        "FLAVOR" => {}
+      }
+
+      data_rollup.save! # have generate_data called
+      data_rollup.data    = rollup_data
+      data_rollup.context = {"tag" => {"foo" => "bar"}}
+      data_rollup.save!
+      reloaded_data_rollup = described_class.where(:id => data_rollup.id).first
+
+      expect(data_rollup.data).to eq(rollup_data)
+      expect(data_rollup.context).to eq({"tag" => {"foo" => "bar"}})
+    end
+
     it "should ensure presence of start_time" do
       data_rollup.start_time = nil
       data_rollup.valid?
